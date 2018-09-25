@@ -1,0 +1,309 @@
+diff --git a/Manufaktura.Controls.Blazor.Test/Manufaktura.Controls.Blazor.Test.csproj b/Manufaktura.Controls.Blazor.Test/Manufaktura.Controls.Blazor.Test.csproj
+index cad56d8..795afa7 100644
+--- a/Manufaktura.Controls.Blazor.Test/Manufaktura.Controls.Blazor.Test.csproj
++++ b/Manufaktura.Controls.Blazor.Test/Manufaktura.Controls.Blazor.Test.csproj
+@@ -15,6 +15,7 @@
+   </ItemGroup>
+ 
+   <ItemGroup>
++    <ProjectReference Include="..\Manufaktura.Controls.Desktop\Manufaktura.Controls.Desktop.csproj" />
+     <ProjectReference Include="..\Manufaktura.Controls\Manufaktura.Controls.csproj" />
+     <ProjectReference Include="..\Manufaktura.Music\Manufaktura.Music.csproj" />
+   </ItemGroup>
+diff --git a/Manufaktura.Controls.Blazor.Test/Pages/Index.cshtml b/Manufaktura.Controls.Blazor.Test/Pages/Index.cshtml
+index 2afd479..e2d643a 100644
+--- a/Manufaktura.Controls.Blazor.Test/Pages/Index.cshtml
++++ b/Manufaktura.Controls.Blazor.Test/Pages/Index.cshtml
+@@ -14,9 +14,11 @@ Welcome to your new app.
+ 
+ <NoteViewer Score=@score Settings=@settings />
+ <button class="btn btn-primary" onclick="@AddNote">Add note</button>
++<button class="btn btn-default" onclick="@PlayScore">Play</button>
+ 
+ 
+ @functions {
++    ScorePlayer player;
+     Score score = Score.CreateOneStaffScore(Clef.Treble, MajorScale.C);
+ 
+     HtmlScoreRendererSettings settings = new HtmlScoreRendererSettings
+@@ -29,6 +31,11 @@ Welcome to your new app.
+         score.FirstStaff.Elements.Add(new Note(Pitch.G4, RhythmicDuration.Quarter));         //https://github.com/aspnet/Blazor/issues/934
+     }
+ 
++    async Task PlayScore()
++    {
++        await JSRuntime.Current.InvokeAsync<object>("Test_PlaySong");
++    }
++
+     protected override void OnInit()
+     {
+         base.OnInit();
+diff --git a/Manufaktura.Controls.Blazor.Test/Program.cs b/Manufaktura.Controls.Blazor.Test/Program.cs
+index 4107f97..e5c2024 100644
+--- a/Manufaktura.Controls.Blazor.Test/Program.cs
++++ b/Manufaktura.Controls.Blazor.Test/Program.cs
+@@ -1,7 +1,9 @@
+-﻿using Microsoft.AspNetCore.Blazor.Browser.Rendering;
++﻿
++using Microsoft.AspNetCore.Blazor.Browser.Rendering;
+ using Microsoft.AspNetCore.Blazor.Browser.Services;
+ using Microsoft.AspNetCore.Blazor.Hosting;
+ using Microsoft.Extensions.DependencyInjection;
++
+ using System;
+ 
+ namespace Manufaktura.Controls.Blazor.Test
+@@ -11,6 +13,7 @@ namespace Manufaktura.Controls.Blazor.Test
+         public static void Main(string[] args)
+         {
+             CreateHostBuilder(args).Build().Run();
++            
+         }
+ 
+         public static IWebAssemblyHostBuilder CreateHostBuilder(string[] args) =>
+diff --git a/Manufaktura.Controls.Blazor.Test/Startup.cs b/Manufaktura.Controls.Blazor.Test/Startup.cs
+index 8a864af..325e083 100644
+--- a/Manufaktura.Controls.Blazor.Test/Startup.cs
++++ b/Manufaktura.Controls.Blazor.Test/Startup.cs
+@@ -1,4 +1,5 @@
+-﻿using Microsoft.AspNetCore.Blazor.Builder;
++﻿
++using Microsoft.AspNetCore.Blazor.Builder;
+ using Microsoft.Extensions.DependencyInjection;
+ 
+ namespace Manufaktura.Controls.Blazor.Test
+diff --git a/Manufaktura.Controls.Blazor.Test/_ViewImports.cshtml b/Manufaktura.Controls.Blazor.Test/_ViewImports.cshtml
+index b33d75a..1fa7c03 100644
+--- a/Manufaktura.Controls.Blazor.Test/_ViewImports.cshtml
++++ b/Manufaktura.Controls.Blazor.Test/_ViewImports.cshtml
+@@ -3,3 +3,5 @@
+ @using Microsoft.AspNetCore.Blazor.Routing
+ @using Manufaktura.Controls.Blazor.Test
+ @using Manufaktura.Controls.Blazor.Test.Shared
++@using Manufaktura.Controls.Audio
++@using Microsoft.JSInterop
+\ No newline at end of file
+diff --git a/Manufaktura.Controls.Blazor.Test/wwwroot/ClientSongViewModel.js b/Manufaktura.Controls.Blazor.Test/wwwroot/ClientSongViewModel.js
+new file mode 100644
+index 0000000..6bfdbb9
+--- /dev/null
++++ b/Manufaktura.Controls.Blazor.Test/wwwroot/ClientSongViewModel.js
+@@ -0,0 +1,165 @@
++﻿var ClientSongViewModel = function () {
++
++    var self = this;
++
++    this.isPlaying = false;
++
++    this.stopToken = 0;
++
++
++
++    this.play = function () {
++
++        self.isPlaying = true;
++
++        self.stopToken++;
++
++        var currentStopToken = self.stopToken;
++
++        var overalTime = 0;
++
++
++
++        function colorBlack(elements) {
++
++            for (var i in elements) {
++
++                var e = elements[i];
++
++                if (e.tagName == "line" || e.tagName == "path") e.style.stroke = "#000";
++
++                else e.style.fill = "#000";
++
++            }
++
++        }
++
++        function colorRed(elements) {
++
++            for (var i in elements) {
++
++                var e = elements[i];
++
++                if (e.tagName == "line" || e.tagName == "path") e.style.stroke = "#c34853";
++
++                else e.style.fill = "#c34853";
++
++            }
++
++        }
++
++
++
++        var notes = [];
++
++
++
++
++
++        $("svg").children().each(function (i, e) {
++
++
++
++            var delayTime = $(e).attr("data-playback-start");
++
++            if (delayTime == null) return;
++
++            delayTime = parseInt(delayTime);
++
++
++
++            var pitch = parseInt($(e).attr("data-midi-pitch"));
++
++            var duration = parseInt($(e).attr("data-playback-duration"));
++
++
++
++            if (notes.length > 0 && notes[notes.length - 1].id == $(e).attr("id")) {
++
++                notes[notes.length - 1].elements.push(e);
++
++            }
++
++            else {
++
++                var note = { delayTime: delayTime, pitch: pitch, duration: duration, elements: [], id: $(e).attr("id") };
++
++                note.elements.push(e);
++
++                notes.push(note);
++
++            }
++
++            overalTime = delayTime + duration;
++
++        });
++
++
++
++        for (var i in notes) {
++
++            var noteInfo = notes[i];
++
++
++
++            setTimeout(function (note) {
++
++                return function () {
++
++                    if (self.stopToken != currentStopToken) {
++
++                        colorBlack(note.elements);
++
++                        return;
++
++                    }
++
++
++
++                    MIDI.noteOn(0, note.pitch, 127, 0);
++
++                    MIDI.noteOff(0, note.pitch, note.duration * 0.001);
++
++                    colorRed(note.elements);
++
++                };
++
++            }(noteInfo), noteInfo.delayTime);
++
++
++
++            setTimeout(function (note) {
++
++                return function () {
++
++                    colorBlack(note.elements);
++
++                };
++
++            }(noteInfo), noteInfo.delayTime + noteInfo.duration);
++
++        }
++
++
++
++        setTimeout(function () {
++
++            if (self.stopToken != currentStopToken) return;
++
++            self.isPlaying = false;
++
++        }, overalTime);
++
++    }
++
++
++
++    this.stop = function () {
++
++        self.stopToken++;
++
++        self.isPlaying = false;
++
++    }
++
++}
+\ No newline at end of file
+diff --git a/Manufaktura.Controls.Blazor.Test/wwwroot/index.html b/Manufaktura.Controls.Blazor.Test/wwwroot/index.html
+index 3644fd2..ce9a55c 100644
+--- a/Manufaktura.Controls.Blazor.Test/wwwroot/index.html
++++ b/Manufaktura.Controls.Blazor.Test/wwwroot/index.html
+@@ -11,5 +11,20 @@
+ <body>
+     <app>Loading...</app>
+     <script src="_framework/blazor.webassembly.js"></script>
++    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
++    <script src="midijs/Base64.js" type="text/javascript"></script>
++    <script src="midijs/Base64binary.js" type="text/javascript"></script>
++    <script src="midijs/WebAudioAPI.js" type="text/javascript"></script>
++    <script src="midijs/audioDetect.js" type="text/javascript"></script>
++    <script src="midijs/gm.js" type="text/javascript"></script>
++    <script src="midijs/loader.js" type="text/javascript"></script>
++    <script src="midijs/plugin.audiotag.js" type="text/javascript"></script>
++    <script src="midijs/plugin.webaudio.js" type="text/javascript"></script>
++    <script src="midijs/plugin.webmidi.js" type="text/javascript"></script>
++    <script src="midijs/dom_request_xhr.js" type="text/javascript"></script>
++    <script src="midijs/dom_request_script.js" type="text/javascript"></script>
++    <script src="ClientSongViewModel.js" type="text/javascript"></script>
++    <script src="interop.js" type="text/javascript"></script>
++    
+ </body>
+ </html>
+\ No newline at end of file
+diff --git a/Manufaktura.Controls.Blazor.Test/wwwroot/interop.js b/Manufaktura.Controls.Blazor.Test/wwwroot/interop.js
+new file mode 100644
+index 0000000..6ce7147
+--- /dev/null
++++ b/Manufaktura.Controls.Blazor.Test/wwwroot/interop.js
+@@ -0,0 +1,19 @@
++﻿function Test_PlaySong() {
++
++    window.player = new ClientSongViewModel();
++
++    window.player.play();
++}
++
++window.onload = function () {
++    MIDI.loadPlugin({
++        soundfontUrl: "/soundfonts/",
++        instrument: "acoustic_grand_piano",
++        onprogress: function (state, progress) {
++            console.log(state, progress);
++        },
++        onsuccess: function () {
++            MIDI.setVolume(0, 127);
++        }
++    });
++};
+\ No newline at end of file
