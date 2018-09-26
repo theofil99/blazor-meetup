@@ -16,6 +16,16 @@ alt="Blazor: Modern Web development with .NET and WebAssembly - Daniel Roth" wid
 " target="_blank"><img src="http://img.youtube.com/vi/Ta_qXpXQqGQ/0.jpg" 
 alt="ASP.NET Community Standup - Feb 6, 2018 - Blazor Update (Blazor stuff starts at 12:00)" width="600" height="320" border="10" /></a>
 
+### ASP.NET Community Standup - April 3, 2018 - Blazor Update with Dan Roth and Steve Sanderson (Blazor stuff starts at around 15:40)
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=_b_fUq5DU0U
+" target="_blank"><img src="http://img.youtube.com/vi/_b_fUq5DU0U/0.jpg" 
+alt="ASP.NET Community Standup - April 3, 2018 - Blazor Update with Dan Roth and Steve Sanderson" width="600" height="320" border="10" /></a>
+
+### ASP.NET Community Standup - June 12, 2018 - Meet the Blazor team! (Binary serialization at 20:03)
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=CWuIz9khK-o
+" target="_blank"><img src="http://img.youtube.com/vi/CWuIz9khK-o/0.jpg" 
+alt="ASP.NET Community Standup - June 12, 2018 - Meet the Blazor team!e" width="600" height="320" border="10" /></a>
+
 
 ### [Music Notation in Blazor - Part I](https://www.codeproject.com/Articles/1252819/Music-Notation-in-Blazor-Part-I)
 ### [Music Notation in Blazor - Part II](https://www.codeproject.com/Articles/1254712/Music-Notation-in-Blazor-Part-2)
