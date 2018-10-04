@@ -16,5 +16,8 @@
 ### ASP.NET Community Standup - June 12, 2018 - Meet the Blazor team! (Binary serialization at 20:03)
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=CWuIz9khK-o" target="_blank"><img src="http://img.youtube.com/vi/CWuIz9khK-o/0.jpg" alt="ASP.NET Community Standup - June 12, 2018 - Meet the Blazor team!e" width="600" height="320" border="10" /></a>
 
+### Templated Components in 0.6.0
+https://blogs.msdn.microsoft.com/webdev/2018/10/02/blazor-0-6-0-experimental-release-now-available/
+
 ### [Music Notation in Blazor - Part I](https://www.codeproject.com/Articles/1252819/Music-Notation-in-Blazor-Part-I)
 ### [Music Notation in Blazor - Part II](https://www.codeproject.com/Articles/1254712/Music-Notation-in-Blazor-Part-2)
